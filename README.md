@@ -1,21 +1,67 @@
-# KIRL
+# KIRL (IEEE TII 2026)
 
-Code for *Kinematics-Informed Reinforcement Learning for Unified Trajectory Optimization in CNC Interpolation* (IEEE Transactions on Industrial Informatics, accepted).
+[![Paper](https://img.shields.io/badge/IEEE%20TII-accepted-blue)](#citation)
 
-KIRL unifies corner smoothing and feedrate scheduling as a segment-level Markov decision process. At each corner the policy chooses the junction kinematic state (position, velocity, acceleration); a minimum-jerk quintic primitive then connects consecutive junctions in the shortest duration that satisfies the tolerance and kinematic limits.
+Official implementation of the paper:
 
-## Release status
+> **Kinematics-Informed Reinforcement Learning for Unified Trajectory Optimization in CNC Interpolation**
+>
+> Jin Zhang, Mingyang Zhao, Bing Liu, Dong-Ming Yan, Xin Jiang
+>
+> *IEEE Transactions on Industrial Informatics*, 2026 (accepted).
 
-This is a partial release. It currently contains the quintic motion primitives and the eight benchmark toolpaths. The trained universal policy, the inference-time planner and the scripts reproducing the paper's experiments will be released after the paper is formally published.
+<p align="center">
+  <img src="assets/framework.png" width="100%">
+</p>
+
+## Overview
+
+**Corner smoothing and feedrate planning, decided jointly, one corner at a time.**
+
+Conventional CNC interpolation first smooths the corners of a linear toolpath and then plans the feedrate along the fixed geometry. KIRL merges the two stages into a segment-level Markov decision process. At corner $i$ the policy chooses the junction kinematic state
+
+$$\mathsf{A}_i = (\mathbf{q}_i,\ \mathbf{v}_i,\ \mathbf{a}_i),$$
+
+and the segment between consecutive junctions is the minimum-jerk quintic with these boundary states, available in closed form for any duration $T$:
+
+$$\mathbf{s}_i(t) = \sum_{k=0}^{5} \mathbf{c}_k t^k,\qquad \mathbf{C} = \mathbf{A}(T)^{-1}\mathbf{B},\qquad t\in[0,T].$$
+
+The duration is the smallest one that keeps the segment inside the tolerance band and within the kinematic limits,
+
+$$T_i^{\ast} = \min\big\{\,T :\ |d(t)|\le\delta_{\max},\ \lVert\mathbf{v}(t)\rVert\le v_{\max},\ \lVert\mathbf{a}(t)\rVert\le a_{\max},\ \lVert\mathbf{j}(t)\rVert\le j_{\max}\,\big\},$$
+
+found by a one-dimensional search, and the policy learns to minimize the total machining time $\sum_i T_i^{\ast}$.
+
+**Highlights:**
+- **Unified** — geometry and feedrate are optimized in a single decision process instead of two decoupled stages
+- **Analytic primitives** — closed-form minimum-jerk quintics; feasibility reduces to a 1-D search over the duration
+- **Zero-shot generalization** — one universal policy plans held-out toolpaths without retraining
+- **Real-time** — 0.08–0.10 ms per junction on a single CPU core
+- **Machine-validated** — planned trajectories executed in planar cutting experiments on a CNC machine
+
+## Release Status
+
+This is a partial release. The trained universal policy, the inference-time planner and the scripts reproducing the paper's experiments will be released after the paper is formally published.
 
 | Component | Status |
 |---|---|
-| Quintic motion primitives (`quintic.py`) | released |
-| Benchmark toolpaths (`data/`) | released |
-| Trained universal policy and planner (Algorithm 1) | after publication |
-| Reproduction of Table III and Sec. IV-D timings | after publication |
+| Quintic motion primitives (`quintic.py`) | ✅ released |
+| Benchmark toolpaths (`data/`) | ✅ released |
+| Trained universal policy and planner (Algorithm 1) | ⏳ after publication |
+| Reproduction of Table III and the real-time timings | ⏳ after publication |
 
-## Install
+## Repository Structure
+
+```
+KIRL/
+├── quintic.py        # Minimum-jerk quintic motion primitives
+├── data/             # Eight benchmark toolpaths (tab-separated XY, mm)
+│   ├── 3/  dolphin/  manta_ray/  mermaid/  simple_wave240/  unicorn/
+│   └── golden_fish/  shark/      # held out from training
+└── assets/           # Figures
+```
+
+## Installation
 
 ```bash
 conda create -n kirl python=3.10 && conda activate kirl
@@ -24,16 +70,16 @@ pip install -r requirements.txt
 
 ## Data
 
-Eight planar benchmark toolpaths designed by the authors, stored as `data/<name>/data.txt` (tab-separated XY, mm). The universal policy was trained on six of them; **Golden Fish** and **Shark** are held out and never seen during training.
+Eight planar benchmark toolpaths designed by the authors, stored as `data/<name>/data.txt`. The universal policy is trained on six of them; **Golden Fish** and **Shark** are held out and never seen during training.
 
 ```python
 import numpy as np
 waypoints = np.loadtxt("data/shark/data.txt", delimiter="\t")   # (N, 2), mm
 ```
 
-## Quintic motion primitives
+## Usage
 
-Each trajectory segment is the minimum-jerk motion between two boundary kinematic states (Theorem 1): a fifth-degree polynomial per axis whose coefficients follow in closed form from the position, velocity and acceleration at both endpoints and the duration `T`.
+### Quintic motion primitives
 
 ```python
 from quintic import KinematicState, boundary_conditions, coefficients, sample
@@ -48,9 +94,9 @@ In KIRL the policy chooses `x1` at every corner, and the planner searches for th
 
 ## Results
 
-Zero-shot generalization of the universal policy (paper Sec. IV-C, Table III). Kinematic limits (Table I): deviation ≤ 0.5 mm, velocity ≤ 10 mm/s, acceleration ≤ 100 mm/s², jerk ≤ 10000 mm/s³. `*` = held-out toolpath.
+Zero-shot generalization of the universal policy (paper Table III). Kinematic limits: deviation ≤ 0.5 mm, velocity ≤ 10 mm/s, acceleration ≤ 100 mm/s², jerk ≤ 10000 mm/s³. `*` = held-out toolpath.
 
-| Toolpath | Segments | T_m (s) | max d (mm) | max v | max a | max j | Fallbacks |
+| Toolpath | Segments | $T_m$ (s) | max dev. (mm) | max vel. | max acc. | max jerk | Fallbacks |
 |---|---|---|---|---|---|---|---|
 | Digit 3 | 326 | 47.985 | 0.118 | 9.40 | 100.0 | 8655 | 0 |
 | Mermaid | 604 | 89.574 | 0.129 | 9.40 | 100.0 | 9864 | 0 |
@@ -61,7 +107,7 @@ Zero-shot generalization of the universal policy (paper Sec. IV-C, Table III). K
 | Golden Fish* | 382 | 56.323 | 0.126 | 9.41 | 100.0 | 8192 | 0 |
 | Shark* | 244 | 36.284 | 0.120 | 9.40 | 100.0 | 8451 | 0 |
 
-Full planning takes 0.08–0.10 ms per junction and 21–53 ms per toolpath on a single CPU core (Sec. IV-D).
+Planning a full toolpath takes 21–53 ms on a single CPU core.
 
 ## Citation
 
@@ -77,4 +123,4 @@ Full planning takes 0.08–0.10 ms per junction and 21–53 ms per toolpath on a
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
