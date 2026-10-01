@@ -41,12 +41,12 @@ found by a one-dimensional search, and the policy learns to minimize the total m
 
 ## Release Status
 
-This is a partial release. The trained universal policy, the inference-time planner and the scripts reproducing the paper's experiments will be released after the paper is formally published.
+This is a partial release. The benchmark toolpaths, the trained universal policy, the inference-time planner and the scripts reproducing the paper's experiments will be released after the paper is formally published.
 
 | Component | Status |
 |---|---|
 | Quintic motion primitives (`quintic.py`) | ✅ released |
-| Benchmark toolpaths (`data/`) | ✅ released |
+| Benchmark toolpaths | ⏳ after publication |
 | Trained universal policy and planner (Algorithm 1) | ⏳ after publication |
 | Reproduction of Table III and the real-time timings | ⏳ after publication |
 
@@ -55,9 +55,6 @@ This is a partial release. The trained universal policy, the inference-time plan
 ```
 KIRL/
 ├── quintic.py        # Minimum-jerk quintic motion primitives
-├── data/             # Eight benchmark toolpaths (tab-separated XY, mm)
-│   ├── 3/  dolphin/  manta_ray/  mermaid/  simple_wave240/  unicorn/
-│   └── golden_fish/  shark/      # held out from training
 └── assets/           # Figures
 ```
 
@@ -70,12 +67,7 @@ pip install -r requirements.txt
 
 ## Data
 
-Eight planar benchmark toolpaths designed by the authors, stored as `data/<name>/data.txt`. The universal policy is trained on six of them; **Golden Fish** and **Shark** are held out and never seen during training.
-
-```python
-import numpy as np
-waypoints = np.loadtxt("data/shark/data.txt", delimiter="\t")   # (N, 2), mm
-```
+The experiments use eight planar benchmark toolpaths designed by the authors (Digit 3, Mermaid, Unicorn, Simple Wave, Dolphin, Manta Ray, Golden Fish, Shark). The universal policy is trained on six of them; **Golden Fish** and **Shark** are held out and never seen during training. The toolpaths will be released together with the planner.
 
 ## Usage
 
