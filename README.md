@@ -28,7 +28,7 @@ $$\mathbf{s}_i(t) = \sum_{k=0}^{5} \mathbf{c}_k t^k,\qquad \mathbf{C} = \mathbf{
 
 The duration is the smallest one that keeps the segment inside the tolerance band and within the kinematic limits,
 
-$$T_i^{\ast} = \min\big\{\,T :\ |d(t)|\le\delta_{\max},\ \lVert\mathbf{v}(t)\rVert\le v_{\max},\ \lVert\mathbf{a}(t)\rVert\le a_{\max},\ \lVert\mathbf{j}(t)\rVert\le j_{\max}\,\big\},$$
+$$T_i^{\ast} = \min \big\lbrace T :\ \lvert d(t)\rvert \le \delta_{\max},\ \lVert\mathbf{v}(t)\rVert \le v_{\max},\ \lVert\mathbf{a}(t)\rVert \le a_{\max},\ \lVert\mathbf{j}(t)\rVert \le j_{\max} \big\rbrace,$$
 
 found by a one-dimensional search, and the policy learns to minimize the total machining time $\sum_i T_i^{\ast}$.
 
